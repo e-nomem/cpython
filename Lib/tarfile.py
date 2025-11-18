@@ -1276,6 +1276,10 @@ class TarInfo(object):
 
     @classmethod
     def frombuf(cls, buf, encoding, errors):
+        return cls._frombuf(buf, encoding, errors, False)
+
+    @classmethod
+    def _frombuf(cls, buf, encoding, errors, skip_dircheck):
         """Construct a TarInfo object from a 512 byte bytes object.
         """
         if len(buf) == 0:
@@ -1307,7 +1311,7 @@ class TarInfo(object):
 
         # Old V7 tar format represents a directory as a regular
         # file with a trailing slash.
-        if obj.type == AREGTYPE and obj.name.endswith("/"):
+        if not skip_dircheck and obj.type == AREGTYPE and obj.name.endswith("/"):
             obj.type = DIRTYPE
 
         # The old GNU sparse format occupies some of the unused
@@ -1342,8 +1346,12 @@ class TarInfo(object):
         """Return the next TarInfo object from TarFile object
            tarfile.
         """
+        return cls._fromtarfile(tarfile, False)
+
+    @classmethod
+    def _fromtarfile(cls, tarfile, skip_dircheck):
         buf = tarfile.fileobj.read(BLOCKSIZE)
-        obj = cls.frombuf(buf, tarfile.encoding, tarfile.errors)
+        obj = cls._frombuf(buf, tarfile.encoding, tarfile.errors, skip_dircheck)
         obj.offset = tarfile.fileobj.tell() - BLOCKSIZE
         return obj._proc_member(tarfile)
 
@@ -1401,7 +1409,7 @@ class TarInfo(object):
 
         # Fetch the next header and process it.
         try:
-            next = self.fromtarfile(tarfile)
+            next = self._fromtarfile(tarfile, True)
         except HeaderError as e:
             raise SubsequentHeaderError(str(e)) from None
 

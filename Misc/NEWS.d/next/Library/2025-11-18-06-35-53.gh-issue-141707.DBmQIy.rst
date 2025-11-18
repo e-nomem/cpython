@@ -1,0 +1,2 @@
+Fix parsing of tar files when entries combine using the GNU long name
+extension with entry type ``AREGFILE``
